@@ -1,160 +1,162 @@
-async function buscarProdutos(){
-    try{
-        const resposta = await fetch ('https://api.escuelajs.co/api/v1/products');
-        const produtos = await resposta.json();
-        return produtos;        
-    }catch (error){
-        throw new Error('Erro ao buscar produtos');
-    }
+const params = new URLSearchParams(window.location.search);
+const produto_id = params.get("id")
+
+if(produto_id){
+    mostrarUnicoProduto(produto_id)
 }
 
-function alterarTema(){
-    const html = document.documentElement;
-    const temaAtual = html.getAttribute('data-theme');
-    const novoTema = temaAtual === 'dark'? 'light' : 'dark';
+const lista3Recentes = document.getElementById("featured-list")
+const todos = document.getElementById("products-list")
+const selecaoCategorias = document.getElementById("category-filter") 
+const paginaDetalhes = document.getElementById("product-detail") 
 
-    html.setAttribute('data-theme', novoTema);
-
-    localStorage.setItem('theme', novoTema);
+function returnURL(endpoint){
+    return `https://api.escuelajs.co/api/v1/${endpoint}`
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-    const listaDestaques = document.getElementById('featured-list');
+mostrar3Recentes()
+mostrarTodos()
+buscarCategorias()
+mostrarPorCategoria(selecaoCategorias.value)
 
-    if(listaDestaques){
-        console.log('Iniciando carregamento da Home...')
-        executarPaginaInicial();
-    }
-});
+function mostrar3Recentes(){
+    fetch(returnURL('products'))
+    .then(response => response.json())
+    .then(dados => {
 
-async function executarPaginaInicial() {
-    
-    const container = document.getElementById('featured-list');
+        let top3produtos = dados.slice(0,3)
+        let cards = ""
 
-    container.innerHTML = '';
-
-    const todosProdutos = await buscarProdutos();
-
-    const destaques  = todosProdutos.slice (0, 3);
-
-    destaques.forEach((produto) => {
-        container.innerHTML += `
-            <article class="card">
-                <div class="card-img-wrapper">
-                    <img src="${produto.images[0]}" alt="${produto.title}" class="card-img">
-                </div>
-                <div class="card-content">
-                    <span class="card-category">${produto.category.name}</span>
-                    <h3 class="card-title">${produto.title}</h3>
-                    <div class="card-footer">
-                        <span class="card-price">R$ ${produto.price}</span>
-                        <a href="detail.html?id=${produto.id}" class="btn-primary btn-small">Ver Detalhes</a>
+        top3produtos.forEach(produto => {
+            cards += `
+                <article class="card placeholder-card">
+                    <div class="card-img-wrapper">
+                        <img src="https://placehold.co/600x400/1e293b/6366f1?text=Carregando" alt="Loading" class="card-img">
                     </div>
-                </div>
-            </article>
-        `;
-    });
-
-}
-
-
-const filtroCategoria = document.getElementById('category-filter');
-const listaProdutos = document.getElementById('products-list');
-
-if (listaProdutos && filtroCategoria) {
-    console.log('Iniciando carregamento do Catálogo... 🛒');
-    carregarCategorias(filtroCategoria);
-
-    filtroCategoria.addEventListener('change', () => {
-    const idSelecionado = filtroCategoria.value;
-    console.log('Filtro alterado para o ID:', idSelecionado);
-    
-    aplicarFiltro(idSelecionado);
-});
-}
-
-
-async function carregarCategorias(selectElement) {
-    
-    const resposta = await fetch ('https://api.escuelajs.co/api/v1/categories');
-    const categorias = await resposta.json();
-
-    selectElement.innerHTML = '<option value="all">Todas as categorias</option>'
-
-    categorias.forEach (categoria => {
-        selectElement.innerHTML += `   
-        <option value="${categoria.id}">${categoria.name}</option> `
-    });
-}
-
-async function executarPaginaCatalogo() {
-    const container = document.getElementById(products-list);
-    container.innerHTML = '';
-
-    const todosProdutos = await buscarProdutos();
-
-    renderizarProdutos(todosProdutos, container);
-
-    todosProdutos.forEach(produto => {
-        let imagemLimpa = produto.images[0].replace(/[\[\]"]/g,"");
-        
-        container.innerHTML += `
-        <article class="card">
-                <div class="card-img-wrapper">
-                    <img src="${imagemLimpa}" alt="${produto.title}" class="card-img" onerror="this.src='https://placehold.co/600x400?text=Imagem+Indisponível'">
-                </div>
-                <div class="card-content">
-                    <span class="card-category">${produto.category.name}</span>
-                    <h3 class="card-title">${produto.title}</h3>
-                    <div class="card-footer">
+                    <div class="card-content">
+                        <span class="card-category">${produto.category.name}</span>
+                        <h3 class="card-title">${produto.title}</h3>
+                        <div class="card-footer">
                         <span class="card-price">R$ ${produto.price}</span>
-                        <a href="detail.html?id=${produto.id}" class="btn-primary btn-small">Ver Detalhes</a>
+                        <a href="./detail.html?id=${produto.id}" class="btn-primary btn-small">Ver Detalhes</a>
+                        </div>
                     </div>
-                </div>
-            </article>
-        `;
-    });
-}
-
-async function aplicarFiltro(idSelecionado) {
-    const container = document.getElementById('products-list');
-    const todosProdutos = await buscarProdutos(); 
-
-    let produtosExibidos;
-
-    if (idSelecionado === 'all') {
-        produtosExibidos = todosProdutos;
-    } else {
-        produtosExibidos = todosProdutos.filter(produto => {
-            return produto.category.id == idSelecionado;
+                </article>
+            `
         });
-    }
 
-    renderizarProdutos(produtosExibidos, container);
+        lista3Recentes.innerHTML = cards
+
+    })
 }
 
+function mostrarTodos(){
+    fetch(returnURL('products'))
+    .then(response => response.json())
+    .then(dados => {
 
-function renderizarProdutos(lista, elemento) {
-    elemento.innerHTML = '';
+        let cards = ""
 
-    lista.forEach(produto => {
-        let imagemLimpa = produto.images[0].replace(/[\[\]"]/g, "");
-
-        elemento.innerHTML += `
-            <article class="card">
-                <div class="card-img-wrapper">
-                    <img src="${imagemLimpa}" alt="${produto.title}" class="card-img" onerror="this.src='https://placehold.co/600x400?text=Imagem+Indisponível'">
-                </div>
-                <div class="card-content">
-                    <span class="card-category">${produto.category.name}</span>
-                    <h3 class="card-title">${produto.title}</h3>
-                    <div class="card-footer">
-                        <span class="card-price">R$ ${produto.price}</span>
-                        <a href="detail.html?id=${produto.id}" class="btn-primary btn-small">Ver Detalhes</a>
+        dados.forEach(produto => {
+            cards += `
+                <article class="card placeholder-card">
+                    <div class="card-img-wrapper">
+                        <img src="https://placehold.co/600x400/1e293b/6366f1?text=Carregando" alt="Loading" class="card-img">
                     </div>
-                </div>
-            </article>
-        `;
-    });
+                    <div class="card-content">
+                        <span class="card-category">${produto.category.name}</span>
+                        <h3 class="card-title">${produto.title}</h3>
+                        <div class="card-footer">
+                        <span class="card-price">R$ ${produto.price}</span>
+                        <a href="./detail.html?id=${produto.id}" class="btn-primary btn-small">Ver Detalhes</a>
+                        </div>
+                    </div>
+                </article>
+            `
+        });
+
+        todos.innerHTML = cards
+
+    })
 }
 
+function buscarCategorias(){
+    fetch(returnURL('categories'))
+    .then(response => response.json())
+    .then(dados => {
+
+        let options = ""
+
+        dados.forEach(cu => {
+            options += `
+                <option value="${cu.id}">${cu.name}</option>
+            `
+        });
+
+        selecaoCategorias.innerHTML = options
+
+    })
+}
+
+function mostrarPorCategoria(id){
+    fetch(returnURL(`products/?categoryId=${id}`))
+    .then(response => response.json())
+    .then(dados => {
+
+        let cards = ""
+
+        dados.forEach(produto => {
+            cards += `
+                <article class="card placeholder-card">
+                    <div class="card-img-wrapper">
+                        <img src="https://placehold.co/600x400/1e293b/6366f1?text=Carregando" alt="Loading" class="card-img">
+                    </div>
+                    <div class="card-content">
+                        <span class="card-category">${produto.category.name}</span>
+                        <h3 class="card-title">${produto.title}</h3>
+                        <div class="card-footer">
+                        <span class="card-price">R$ ${produto.price}</span>
+                        <a href="./detail.html?id=${produto.id}" class="btn-primary btn-small">Ver Detalhes</a>
+                        </div>
+                    </div>
+                </article>
+            `
+        });
+
+        todos.innerHTML = cards
+
+    })
+}
+
+function mostrarUnicoProduto(id){
+    fetch(returnURL(`products/${id}`))
+    .then(response => response.json())
+    .then(dados => {
+
+        let detalhes = `
+                <img src="https://placehold.co/600x400/1e293b/6366f1?text=Carregando" alt="Loading" class="detail-img">
+                    <div class="detail-info">
+                        <span class="card-category" style="font-size:1rem; margin-bottom:1rem; display:block;">Categoria: ${dados.category.name}</span>
+                        <h1>${dados.title}</h1>
+                        <div class="detail-price">R$ ${dados.price}</div>
+                        <p class="detail-description">${dados.description}</p>
+                        <button class="btn-primary" disabled>Adicionar ao Carrinho</button>
+                    </div>
+            `
+
+        paginaDetalhes.innerHTML = detalhes
+
+    })
+}
+
+function toggleTheme(){
+    const temaAtual = document.documentElement.getAttribute("data-theme")
+    
+    if(temaAtual == 'dark'){
+        document.documentElement.setAttribute('data-theme', 'light')
+        localStorage.setItem('theme', 'light')
+    }else{
+        document.documentElement.setAttribute('data-theme', 'dark')
+        localStorage.setItem('theme', 'dark')
+    }
+}
